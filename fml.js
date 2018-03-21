@@ -11,7 +11,6 @@ javascript: (function () {
       'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: 1 },
       'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .6 },
       'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .9 },
-      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .7 },
     },
     weekendWeight: { /* This is how much to weight each day of a movie that is split into separate days */
       '3': { /* 3 day weekend */
