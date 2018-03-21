@@ -1,6 +1,5 @@
 javascript: (function () {
-  window.fantasyData = {
-    /* Settings you may want to edit */
+  window.fsettings = {
     staleThreshold: 5, /* Number of days before a post is considered too old to the scraper */
     autoProjection: 50000, /* If we don't have a projection, how many $ should we give it per FML bux */
     targets: { /* Adjusted manually tweaks the actual projections, weight is how much bearing to give it when averaging the numbers */
@@ -9,9 +8,9 @@ javascript: (function () {
       'pro': { url: 'http://pro.boxoffice.com/category/boxoffice-forecasts/', adjusted: 0.954, weight: 1 },
       'rep': { url: 'http://www.boxofficereport.com/predictions/predictions.html', adjusted: 0.953, weight: 1 },
       'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: 1 },
-      'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .6 },
+      'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .7 },
       'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .9 },
-      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .7 },
+      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .5 },
     },
     weekendWeight: { /* This is how much to weight each day of a movie that is split into separate days */
       '3': { /* 3 day weekend */
@@ -26,10 +25,238 @@ javascript: (function () {
         'MON': .1298
       }
     },
-    /* End Settings */
-
+  };
+  window.fdata = {
     scraped: {},
-    formdata: {}
+    formdata: {},
+  };
+
+  window.scraper = {
+    handlers: {
+      navigate: function (target) {
+        if (fsettings.targets[target]) {
+          scraper.handlers.rawNavigate(fsettings.targets[target].url);
+        } else {
+          alert('That isn\'t one of the options');
+        }
+      },
+      rawNavigate: function (link) {
+        var separator = !!link.match('fantasymovieleague') || (link.match(/^\//) && domain.match('fantasymovieleague'))
+          ? (link.match(/\?/) ? '&' : '?') : '#';
+        document.location.href = link + separator + 'data=' + encodeURIComponent(JSON.stringify(fdata.scraped));
+      },
+      chooseTarget: function (ostr, setTarget) {
+        var forceAlert = ostr ? true : false;
+        str = (ostr ? ostr : '') + 'Where would you like to go?';
+        var optionsstr = '',
+          placeholder = 'fml';
+        for (var key in fsettings.targets) {
+          if (fsettings.targets.hasOwnProperty(key) && fsettings.targets[key].url) {
+            host = (fsettings.targets[key].url).replace(/https?:\/\//, '').replace(/\.com.*/, '.com');
+            if ((!fdata.scraped[key] && domain !== host) || key === 'fml') {
+              optionsstr += '\n\u2022 ' + key + ': ' + host;
+            }
+            placeholder = key !== 'fml' && placeholder === 'fml' ? key : placeholder;
+          }
+        }
+        if (optionsstr.split('\n').length > 2) {
+          scraper.handlers.navigate(prompt(str + optionsstr, 'fml'));
+        } else {
+          if (forceAlert) {
+            alert(ostr);
+          }
+          scraper.handlers.navigate('fml');
+        }
+      },
+      path: {
+        'fantasymovieleague.com': function () {
+          if (document.location.pathname == '/') {
+            fdata.formdata = fmlApp.helpers.parseFMLData(fmlApp.helpers.flattenData(fdata.scraped));
+            fmlApp.handlers.setup.dom();
+            fmlApp.handlers.recalculate();
+          } else if (href.match('/posts') || href.match('/news')) {
+            scraper.handlers.path['fantasymovieleague.com/insider']();
+          } else if (href.match('/searchmessages') || href.match('/chatter')) {
+            scraper.handlers.path['fantasymovieleague.com/coupe']();
+          } else {
+            scraper.handlers.chooseTarget();
+          }
+        },
+        'fantasymovieleague.com/insider': function () {
+          fdata.scraped.insider = {};
+          if (href.match('news')) {
+            var links = $('.news-item h5 a');
+            for (var i = 0; i < links.length; i++) {
+              if (links[i].getAttribute('title').match(/Estimates/i)) {
+                var date = new Date(links[i].parentNode.parentNode.querySelectorAll('.timestamp')[0].textContent.replace(/.*? . /, '').replace(/ . .*/, ''));
+                if (scraper.helpers.isntStale(date)) {
+                  scraper.handlers.rawNavigate(links[i].getAttribute('href'));
+                  break;
+                } else {
+                  scraper.handlers.chooseTarget("\u274C FML Insider hasn\'t posted yet.\n\n");
+                }
+                break;
+              }
+            }
+          } else if (href.match('posts')) {
+            var rows = $('.post__content')[0].textContent.match(/.*?\$[\d\.,]+( million)?/gi);
+            for (var i = 0; i < rows.length; i++) {
+              var code = fmlApp.helpers.cleanTitle(rows[i].match(/(?<=").+(?=")/)[0]);
+              var projected = parseFloat(rows[i].match(/(?<=\$).+/)[0].replace(/[,]/g, '').replace(/ ?million/i, ''));
+              projected = Math.round(projected < 1000 ? projected * 1000000 : projected);
+              fdata.scraped.insider[code] = projected;
+            }
+            scraper.handlers.chooseTarget("\u2714 Grabbed data from FML Insider!\n\n");
+          }
+        },
+        'fantasymovieleague.com/coupe': function () {
+          fdata.scraped.coupe = {};
+          if (href.match('/searchmessages')) {
+            var link = $('.topic-item__title')[0];
+            var date = new Date(link.closest('.topic-item__body').querySelectorAll('.time-date')[0].textContent.replace(/, \d+:.*/, ''));
+            if (scraper.helpers.isntStale(date)) {
+              scraper.handlers.rawNavigate(link.parentNode.getAttribute('data-href'));
+            } else {
+              scraper.handlers.chooseTarget("\u274C Coupe hasn\'t posted yet.\n\n");
+            }
+          } else if (href.match('/chatter')) {
+            var rows = $('.topic-item__body')[0].textContent.match(/.*?- \$[\d\.,]+M/gi);
+            for (var i = 0; i < rows.length; i++) {
+              var code = fmlApp.helpers.cleanTitle(rows[i].match(/.+(?= -)/)[0]);
+              var projected = parseFloat(rows[i].match(/(?<=\$).+/)[0].replace(/[,]/g, '').replace(/M/, ''));
+              projected = Math.round(projected < 1000 ? projected * 1000000 : projected);
+              fdata.scraped.coupe[code] = projected;
+            }
+            scraper.handlers.chooseTarget("\u2714 Grabbed data from Coupe!\n\n");
+          }
+        },
+        'pro.boxoffice.com': function () {
+          fdata.scraped.pro = {};
+          if (href.match('category')) {
+            var links = document.getElementsByTagName('h3');
+            for (var i = 0; i < links.length; i++) {
+              if (links[i].getElementsByTagName('a')[0].textContent.match('Weekend')) {
+                var date = new Date(links[i].parentNode.querySelectorAll('.date')[0].textContent);
+                if (scraper.helpers.isntStale(date, -1)) {
+                  scraper.handlers.rawNavigate(links[i].getElementsByTagName('a')[0].getAttribute('href'));
+                  break;
+                } else {
+                  scraper.handlers.chooseTarget("\u274C boxofficepro hasn\'t posted yet.\n\n");
+                }
+                break;
+              }
+            }
+          } else if (href.match('weekend')) {
+            var rows = Array.from($('.post-container tbody tr')).slice(1);
+            for (var key in rows) {
+              var code = fmlApp.helpers.cleanTitle(rows[key].getElementsByTagName('td')[0].textContent);
+              var projected = parseFloat(rows[key].getElementsByTagName('td')[2].textContent.replace(/\D/g, ''));
+              fdata.scraped.pro[code] = projected;
+            }
+            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficepro!\n\n");
+          }
+        },
+        'www.boxofficereport.com': function () {
+          fdata.scraped.rep = {};
+          var date = new Date($('h5')[0].textContent.replace(/Published on /mi, '').replace(/ at(.|\r|\n)*/i, ''));
+          if (scraper.helpers.isntStale(date, -1)) {
+            var rows = Array.from($('h4>table.inlineTable:nth-child(1) tr')).slice(1);
+            for (var key in options) {
+              var code = fmlApp.helpers.cleanTitle(options[key].getElementsByTagName('td')[1].textContent.replace(/<.*?>/g, '').replace(/\(.*?\)/g, ''));
+              var projected = parseFloat(options[key].getElementsByTagName('td')[2].textContent.replace(/[^\d\.]/g, '')) * 1000000;
+              fdata.scraped.rep[code] = projected;
+            }
+            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficereport!\n\n");
+          } else {
+            scraper.handlers.chooseTarget("\u274C boxofficereport hasn\'t posted yet.\n\n");
+          }
+        },
+        'www.boxofficemojo.com': function () {
+          fdata.scraped.mojo = {};
+          if (!href.match('id=')) {
+            var rows = Array.from($('ul.nav_tabs ~ table table')[0].getElementsByTagName('tr')).slice(1);
+            for (var i = 0; i < rows.length; i++) {
+              var date = new Date(rows[i].querySelectorAll('td>font>b')[0].textContent);
+              if (date.getDay() == 4) {
+                if (scraper.helpers.isntStale(date)) {
+                  scraper.handlers.rawNavigate(rows[i].getElementsByTagName('a')[0].getAttribute('href'));
+                } else {
+                  scraper.handlers.chooseTarget("\u274C boxofficemojo hasn\'t posted yet.\n\n");
+                }
+                break;
+              }
+            }
+          } else if (href.match('id=')) {
+            var rows = Array.from($('h1 ~ ul')[$('h1 ~ ul').length - 1].getElementsByTagName('li'));
+            for (var key in rows) {
+              var code = fmlApp.helpers.cleanTitle(fmlApp.helpers.cleanTitle(rows[key].getElementsByTagName['b'][0].textContent));
+              var projected = parseFloat(vals[i].textContent.replace(/.*? - \$/, '').replace(/[^\d\.]/g, '')) * 1000000;
+              fdata.scraped.mojo[code] = projected;
+            }
+            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficemojo!\n\n");
+          }
+        },
+        'www.boxofficeprophets.com': function () {
+          fdata.scraped.bop = {};
+          if (!href.match('column')) {
+            var links = $('td>a[href*="column/index.cfm?columnID="] strong');
+            for (var i = 0; i < links.length; i++) {
+              if (links[i].textContent && links[i].textContent.trim().toLowerCase() === 'weekend forecast') {
+                var postedDate = links[i].closest('table').querySelectorAll('strong'),
+                  date = !!postedDate[postedDate.length-1].textContent ? new Date(postedDate[postedDate.length-1].textContent) : (new Date()).setHours(0, 0, 0, 0);
+                if (scraper.helpers.isntStale(date)) {
+                  scraper.handlers.rawNavigate(links[i].closest('a').getAttribute('href'));
+                  break;
+                } else {
+                  scraper.handlers.chooseTarget("\u274C boxofficeprophets hasn\'t posted yet.\n\n");
+                }
+              }
+            }
+          } else {
+            var rows = Array.from($('#EchoTopic table')[$('#EchoTopic table').length - 1].querySelectorAll('tr')).slice(2);
+            for (var key in rows) {
+              var code = fmlApp.helpers.cleanTitle(projections[i].querySelectorAll('td')[1].textContent);
+              var projected = parseFloat(projections[i].querySelectorAll('td')[4].textContent.replace(/[^\d\.]/g, '')) * 1000000;
+              fdata.scraped.bop[code] = projected;
+            }
+            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficeprophets!\n\n");
+          }
+        },
+        'derby.boxofficetheory.com': function () {
+          fdata.scraped.derby = {};
+          var date = new Date($('#MainContent_DerbyWeek_AdditionalTitle')[0].textContent.replace(/.*?-/, ''));
+          if (scraper.helpers.isntStale(date, fsettings.staleThreshold)) {
+            var rows = $('.rgRow,.rgAltRow');
+            for (var i = 0; i < rows.length; i++) {
+              var code = fmlApp.helpers.cleanTitle(rows[i].querySelectorAll('td')[0].textContent);
+              var projected = parseFloat(rows[i].querySelectorAll('td')[2].textContent.replace(/[^\d\.]/g, '')) * 1000000;
+              fdata.scraped.derby[code] = projected;
+            }
+            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficetheory!\n\n");
+          } else {
+            scraper.handlers.chooseTarget("\u274C boxofficetheory hasn\'t updated yet.\n\n");
+          }
+        }
+      }
+    },
+    helpers: {
+      detectPath: function () {
+        if (scraper.handlers.path[domain]) {
+          fdata.scraped = !!href.match(/[\#\&\?]data=/) ?
+            JSON.parse(decodeURIComponent(href.replace(/.*?[\#\&\?]data=/, ''))) : {};
+          return scraper.handlers.path[domain]();
+        } else {
+          return scraper.handlers.chooseTarget();
+        }
+      },
+      isntStale: function (date, adjusted) {
+        var today = (new Date()).setHours(0, 0, 0, 0);
+        if (typeof adjusted != 'undefined') {
+          date.setDate(date.getDate() + adjusted);
+        }
+        return today - date < fsettings.staleThreshold * 24 * 60 * 60 * 1000;
+      },
+    }
   };
 
   window.fmlApp = {
@@ -83,18 +310,18 @@ javascript: (function () {
         calculator: function () {
           calcform = $('.fml-calc .calc-form')[0];
           calcform.innerHTML = '';
-          for (var i = 0; i < fantasyData.formdata.length; i++) {
-            if (fantasyData.formdata[i].bux > 0) {
-              labelStr = '<label ' + (!fantasyData.formdata[i].hasProjection ? 'class="noProjection" title="Autofilled projection data"' : 'class="hasProjection"') + ' for="calc-' + i + '">';
+          for (var i = 0; i < fdata.formdata.length; i++) {
+            if (fdata.formdata[i].bux > 0) {
+              labelStr = '<label ' + (!fdata.formdata[i].hasProjection ? 'class="noProjection" title="Autofilled projection data"' : 'class="hasProjection"') + ' for="calc-' + i + '">';
 
-              if (fantasyData.formdata[i].hasProjection) {
+              if (fdata.formdata[i].hasProjection) {
                 labelStr += '<span class="projections"><span class="title">' +
-                  fantasyData.formdata[i].title + ' ' + fantasyData.formdata[i].day + '</span><ul>';
-                for (key in fantasyData.scraped) {
-                  if (fantasyData.scraped.hasOwnProperty(key)) {
-                    for (innerkey in fantasyData.scraped[key]) {
-                      if (innerkey === fantasyData.formdata[i].code) {
-                        labelStr += '<li><span>' + key + '</span><span>' + fmlApp.helpers.currency(fantasyData.scraped[key][innerkey],'M') + '</span></li>';
+                  fdata.formdata[i].title + ' ' + fdata.formdata[i].day + '</span><ul>';
+                for (key in fdata.scraped) {
+                  if (fdata.scraped.hasOwnProperty(key)) {
+                    for (innerkey in fdata.scraped[key]) {
+                      if (innerkey === fdata.formdata[i].code) {
+                        labelStr += '<li><span>' + key + '</span><span>' + fmlApp.helpers.currency(fdata.scraped[key][innerkey], 'M') + '</span></li>';
                       }
                     }
                   }
@@ -102,14 +329,14 @@ javascript: (function () {
                 labelStr += '</ul></span>';
               }
 
-              labelStr += fantasyData.formdata[i].title + ' ' + fantasyData.formdata[i].day +
-                (!fantasyData.formdata[i].hasProjection ? '*' : '');
+              labelStr += fdata.formdata[i].title + ' ' + fdata.formdata[i].day +
+                (!fdata.formdata[i].hasProjection ? '*' : '');
               labelStr += '</label>';
               calcform.innerHTML += labelStr;
 
               calcform.innerHTML += '<div>' +
                 '<button title="Subtract 10% from value" onclick="fmlApp.handlers.modifyProjected(this,-10)">-</button>' +
-                '<input id="calc-' + i + '" name="' + fantasyData.formdata[i].code + '" value="' + fantasyData.formdata[i].projected + '" type="number" />' +
+                '<input id="calc-' + i + '" name="' + fdata.formdata[i].code + '" value="' + fdata.formdata[i].projected + '" type="number" />' +
                 '<button title="Add 10% to value" onclick="fmlApp.handlers.modifyProjected(this,10)">+</button>' +
                 '</div>';
             }
@@ -124,7 +351,7 @@ javascript: (function () {
           projected = 0;
         $('.cineplex__bd')[0].appendChild(copyText);
         fmlApp.helpers.reparseForm();
-        var top10 = fantasyData.formdata.sort(function (a, b) {
+        var top10 = fdata.formdata.sort(function (a, b) {
           aprojected = a.projected - (a.bestValue ? 2000000 : 0);
           bprojected = b.projected - (b.bestValue ? 2000000 : 0);
           return aprojected < bprojected ? 1 :
@@ -135,7 +362,7 @@ javascript: (function () {
           projected = top10[key].projected - (top10[key].bestValue ? 2000000 : 0);
           if (projected >= 0) {
             str += top10[key].title + '|';
-            str += fmlApp.helpers.currency(projected,'M') + "\r\n";
+            str += fmlApp.helpers.currency(projected, 'M') + "\r\n";
           }
         }
 
@@ -161,9 +388,9 @@ javascript: (function () {
         if (typeof window.google === 'undefined') {
           return false;
         }
-        var performanceData = [ ['Movie', '$/bux'] ],
+        var performanceData = [['Movie', '$/bux']],
           performanceChart = document.createElement('p'),
-          projectedData = [ ['Movie', 'min', 'max', 'projected'] ],
+          projectedData = [['Movie', 'min', 'max', 'projected']],
           projectedChart = document.createElement('p'),
           options = { title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none', textStyle: { color: '#fff' } } };
 
@@ -179,21 +406,21 @@ javascript: (function () {
         $('.fml-calc .output')[0].insertBefore(performanceChart, $('.fml-calc .output')[0].childNodes[1]);
         $('.fml-calc .output')[0].insertBefore(projectedChart, $('.fml-calc .output')[0].childNodes[1]);
 
-        for (var key in fantasyData.formdata) {
-          if (fantasyData.formdata[key].title && fantasyData.formdata[key].projected >= 0) {
+        for (var key in fdata.formdata) {
+          if (fdata.formdata[key].title && fdata.formdata[key].projected >= 0) {
             var min = 9000000000,
               max = 0;
-            for (datakey in fantasyData.scraped) {
-              for (innerkey in fantasyData.scraped[datakey]) {
-                if (fantasyData.formdata[key].code == innerkey) {
-                  min = Math.min(min, fantasyData.scraped[datakey][innerkey]);
-                  max = Math.max(max, fantasyData.scraped[datakey][innerkey]);
+            for (datakey in fdata.scraped) {
+              for (innerkey in fdata.scraped[datakey]) {
+                if (fdata.formdata[key].code == innerkey) {
+                  min = Math.min(min, fdata.scraped[datakey][innerkey]);
+                  max = Math.max(max, fdata.scraped[datakey][innerkey]);
                 }
               }
             }
             min = min === 9000000000 || min === max ? 0 : min;
-            projectedData.push([ fantasyData.formdata[key].title + ' ' + fantasyData.formdata[key].day, min, max, fantasyData.formdata[key].projected ]);
-            performanceData.push([ fantasyData.formdata[key].title + ' ' + fantasyData.formdata[key].day, fantasyData.formdata[key].dollarperbux ]);
+            projectedData.push([fdata.formdata[key].title + ' ' + fdata.formdata[key].day, min, max, fdata.formdata[key].projected]);
+            performanceData.push([fdata.formdata[key].title + ' ' + fdata.formdata[key].day, fdata.formdata[key].dollarperbux]);
           }
         }
         var data = window.google.visualization.arrayToDataTable(projectedData);
@@ -217,7 +444,7 @@ javascript: (function () {
             if (lineup[i].title != 'info') {
               variation.innerHTML +=
                 '<span class="img' + (lineup[i].bestValue ? ' bestvalue' : '') + (!lineup[i].hasProjection ? ' defaultProjection' : '') + '" data-title="' + lineup[i].title + ' ' + lineup[i].day + '" ' +
-                'data-stats="' + fmlApp.helpers.currency(lineup[i].dollarperbux,',') + '/bux | ' +
+                'data-stats="' + fmlApp.helpers.currency(lineup[i].dollarperbux, ',') + '/bux | ' +
                 fmlApp.helpers.currency(lineup[i].projected, ',') + '"><img src="' + lineup[i].img + '"/></span>';
             } else {
               variation.innerHTML +=
@@ -277,12 +504,12 @@ javascript: (function () {
           var projected = projectedData[code],
             hasProjection = !!projected;
           if (!hasProjection) {
-            projected = cost * fantasyData.autoProjection;
+            projected = cost * fsettings.autoProjection;
             movies[i].setAttribute('style', 'border: 1px solid #f00');
           }
 
           if (day) {
-            projected = Math.round(projected * fantasyData.weekendWeight[numdays][day]);
+            projected = Math.round(projected * fsettings.weekendWeight[numdays][day]);
           }
 
           fmlData.push({
@@ -316,8 +543,8 @@ javascript: (function () {
               sum: 0,
               count: 0
             };
-            tempArr[movie].sum += projectedData[source][movie] * fantasyData.targets[source].adjusted * fantasyData.targets[source].weight;
-            tempArr[movie].count += fantasyData.targets[source].weight;
+            tempArr[movie].sum += projectedData[source][movie] * fsettings.targets[source].adjusted * fsettings.targets[source].weight;
+            tempArr[movie].count += fsettings.targets[source].weight;
           }
         }
         for (var movie in tempArr) {
@@ -329,24 +556,24 @@ javascript: (function () {
         var myform = $('.fml-calc .calc-form')[0],
           formVars = Array.from(new FormData(myform), e => e.map(encodeURIComponent)),
           bestValue = 0;
-        for (var movie in fantasyData.formdata) {
+        for (var movie in fdata.formdata) {
           for (var i = 0; i < formVars.length; i++) {
-            if (fantasyData.formdata[movie].code == formVars[i][0]) {
-              fantasyData.formdata[movie].projected = Math.max(parseFloat(formVars[i][1]),1);
-              bestValue = Math.max((fantasyData.formdata[movie].projected / fantasyData.formdata[movie].bux), bestValue);
+            if (fdata.formdata[movie].code == formVars[i][0]) {
+              fdata.formdata[movie].projected = Math.max(parseFloat(formVars[i][1]), 1);
+              bestValue = Math.max((fdata.formdata[movie].projected / fdata.formdata[movie].bux), bestValue);
             }
           }
         }
-        for (var movie in fantasyData.formdata) {
-          fantasyData.formdata[movie].dollarperbux = (fantasyData.formdata[movie].projected / fantasyData.formdata[movie].bux);
-          fantasyData.formdata[movie].bestValue = fantasyData.formdata[movie].dollarperbux >= bestValue;
+        for (var movie in fdata.formdata) {
+          fdata.formdata[movie].dollarperbux = (fdata.formdata[movie].projected / fdata.formdata[movie].bux);
+          fdata.formdata[movie].bestValue = fdata.formdata[movie].dollarperbux >= bestValue;
         }
       },
       getVariation: function (passedLineup, bux) {
         if (passedLineup.length < 8) {
-          for (var m = 0; m < fantasyData.formdata.length; m++) {
+          for (var m = 0; m < fdata.formdata.length; m++) {
             var lineup = passedLineup.slice();
-            var movie = fantasyData.formdata[m],
+            var movie = fdata.formdata[m],
               prevBux = lineup.length ? lineup[lineup.length - 1].bux : 1000,
               prevProjection = lineup.length ? lineup[lineup.length - 1].projected : 0,
               tooExpensive = bux - movie.bux < 0,
@@ -378,211 +605,6 @@ javascript: (function () {
           'bux': bux,
         };
       }
-    }
-  };
-
-  window.scraper = {
-    handlers: {
-      navigate: function (target) {
-        if (fantasyData.targets[target]) {
-          scraper.handlers.rawNavigate(fantasyData.targets[target].url);
-        } else {
-          alert('That isn\'t one of the options');
-        }
-      },
-      rawNavigate: function (link) {
-        var separator = !!link.match('fantasymovieleague') || (link.match(/^\//) && domain.match('fantasymovieleague'))
-          ? (link.match(/\?/) ? '&' : '?') : '#';
-        document.location.href = link + separator + 'data=' + encodeURIComponent(JSON.stringify(fantasyData.scraped));
-      },
-      chooseTarget: function (ostr, setTarget) {
-        var forceAlert = ostr ? true : false;
-        str = (ostr ? ostr : '') + 'Where would you like to go?';
-        var optionsstr = '';
-        for (var key in fantasyData.targets) {
-          if (fantasyData.targets.hasOwnProperty(key) && fantasyData.targets[key].url) {
-            host = (fantasyData.targets[key].url).replace(/https?:\/\//, '').replace(/\.com.*/, '.com');
-            if ((!fantasyData.scraped[key] && domain !== host) || key === 'fml') {
-              optionsstr += '\n\u2022 ' + key + ': ' + host;
-            }
-          }
-        }
-        if (optionsstr.split('\n').length > 2) {
-          scraper.handlers.navigate(prompt(str + optionsstr, 'fml'));
-        } else {
-          if (forceAlert) {
-            alert(ostr);
-          }
-          scraper.handlers.navigate('fml');
-        }
-      },
-      path: {
-        'fantasymovieleague.com': function () {
-          if (document.location.pathname == '/') {
-            fantasyData.formdata = fmlApp.helpers.parseFMLData(fmlApp.helpers.flattenData(fantasyData.scraped));
-            fmlApp.handlers.setup.dom();
-            fmlApp.handlers.recalculate();
-          } else if (href.match('/posts') || href.match('/news')) {
-            scraper.handlers.path['fantasymovieleague.com/insider']();
-          } else if (href.match('/searchmessages') || href.match('/chatter')) {
-            scraper.handlers.path['fantasymovieleague.com/coupe']();
-          } else {
-            scraper.handlers.chooseTarget();
-          }
-        },
-        'fantasymovieleague.com/insider': function () {
-          fantasyData.scraped.insider = {};
-          if (href.match('news')) {
-            var links = $('.news-item h5 a');
-            for (var i = 0; i < links.length; i++) {
-              if (links[i].getAttribute('title').match(/Estimates/i)) {
-                var date = new Date(links[i].parentNode.parentNode.querySelectorAll('.timestamp')[0].textContent.replace(/.*? . /, '').replace(/ . .*/, ''));
-                if (scraper.helpers.isntStale(date)) {
-                  scraper.handlers.rawNavigate(links[i].getAttribute('href'));
-                  break;
-                } else {
-                  scraper.handlers.chooseTarget("\u274C FML Insider hasn\'t posted yet.\n\n");
-                }
-                break;
-              }
-            }
-          } else if (href.match('posts')) {
-            var rows = $('.post__content')[0].textContent.match(/.*?\$[\d\.,]+( million)?/gi);
-            for (var i = 0; i < rows.length; i++) {
-              var code = fmlApp.helpers.cleanTitle(rows[i].match(/(?<=").+(?=")/)[0]);
-              var projected = parseFloat(rows[i].match(/(?<=\$).+/)[0].replace(/[,]/g, '').replace(/ ?million/i, ''));
-              projected = Math.round(projected < 1000 ? projected * 1000000 : projected);
-              fantasyData.scraped.insider[code] = projected;
-            }
-            scraper.handlers.chooseTarget("\u2714 Grabbed data from FML Insider!\n\n");
-          }
-        },
-        'pro.boxoffice.com': function () {
-          fantasyData.scraped.pro = {};
-          if (href.match('category')) {
-            var links = document.getElementsByTagName('h3');
-            for (var i = 0; i < links.length; i++) {
-              if (links[i].getElementsByTagName('a')[0].textContent.match('Weekend')) {
-                var date = new Date(links[i].parentNode.querySelectorAll('.date')[0].textContent);
-                if (scraper.helpers.isntStale(date, -1)) {
-                  scraper.handlers.rawNavigate(links[i].getElementsByTagName('a')[0].getAttribute('href'));
-                  break;
-                } else {
-                  scraper.handlers.chooseTarget("\u274C boxofficepro hasn\'t posted yet.\n\n");
-                }
-                break;
-              }
-            }
-          } else if (href.match('weekend')) {
-            var rows = Array.from($('.post-container tbody tr')).slice(1);
-            for (var key in rows) {
-              var code = fmlApp.helpers.cleanTitle(rows[key].getElementsByTagName('td')[0].textContent);
-              var projected = parseFloat(rows[key].getElementsByTagName('td')[2].textContent.replace(/\D/g, ''));
-              fantasyData.scraped.pro[code] = projected;
-            }
-            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficepro!\n\n");
-          }
-        },
-        'www.boxofficereport.com': function () {
-          fantasyData.scraped.rep = {};
-          var date = new Date($('h5')[0].textContent.replace(/Published on /mi, '').replace(/ at(.|\r|\n)*/i, ''));
-          if (scraper.helpers.isntStale(date, -1)) {
-            var rows = Array.from($('h4>table.inlineTable:nth-child(1) tr')).slice(1);
-            for (var key in options) {
-              var code = fmlApp.helpers.cleanTitle(options[key].getElementsByTagName('td')[1].textContent.replace(/<.*?>/g, '').replace(/\(.*?\)/g, ''));
-              var projected = parseFloat(options[key].getElementsByTagName('td')[2].textContent.replace(/[^\d\.]/g, '')) * 1000000;
-              fantasyData.scraped.rep[code] = projected;
-            }
-            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficereport!\n\n");
-          } else {
-            scraper.handlers.chooseTarget("\u274C boxofficereport hasn\'t posted yet.\n\n");
-          }
-        },
-        'www.boxofficemojo.com': function () {
-          fantasyData.scraped.mojo = {};
-          if (!href.match('id=')) {
-            var rows = Array.from($('ul.nav_tabs ~ table table')[0].getElementsByTagName('tr')).slice(1);
-            for (var i = 0; i < rows.length; i++) {
-              var date = new Date(rows[i].querySelectorAll('td>font>b')[0].textContent);
-              if (date.getDay() == 4) {
-                if (scraper.helpers.isntStale(date)) {
-                  scraper.handlers.rawNavigate(rows[i].getElementsByTagName('a')[0].getAttribute('href'));
-                } else {
-                  scraper.handlers.chooseTarget("\u274C boxofficemojo hasn\'t posted yet.\n\n");
-                }
-                break;
-              }
-            }
-          } else if (href.match('id=')) {
-            var rows = Array.from($('h1 ~ ul')[$('h1 ~ ul').length - 1].getElementsByTagName('li'));
-            for (var key in rows) {
-              var code = fmlApp.helpers.cleanTitle(fmlApp.helpers.cleanTitle(rows[key].getElementsByTagName['b'][0].textContent));
-              var projected = parseFloat(vals[i].textContent.replace(/.*? - \$/, '').replace(/[^\d\.]/g, '')) * 1000000;
-              fantasyData.scraped.mojo[code] = projected;
-            }
-            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficemojo!\n\n");
-          }
-        },
-        'www.boxofficeprophets.com': function () {
-          fantasyData.scraped.bop = {};
-          if (!href.match('column')) {
-            var links = $('td>a[href*="column/index.cfm?columnID="] strong');
-            for (var i = 0; i < links.length; i++) {
-              if (links[i].textContent && links[i].textContent.trim().toLowerCase() === 'weekend forecast') {
-                var postedDate = links[i].closest('table').querySelectorAll('strong'),
-                  date = !!postedDate[postedDate.length-1].textContent ? new Date(postedDate[postedDate.length-1].textContent) : (new Date()).setHours(0, 0, 0, 0);
-                if (scraper.helpers.isntStale(date)) {
-                  scraper.handlers.rawNavigate(links[i].closest('a').getAttribute('href'));
-                  break;
-                } else {
-                  scraper.handlers.chooseTarget("\u274C boxofficeprophets hasn\'t posted yet.\n\n");
-                }
-              }
-            }
-          } else {
-            var rows = Array.from($('#EchoTopic table')[$('#EchoTopic table').length - 1].querySelectorAll('tr')).slice(2);
-            for (var key in rows) {
-              var code = fmlApp.helpers.cleanTitle(projections[i].querySelectorAll('td')[1].textContent);
-              var projected = parseFloat(projections[i].querySelectorAll('td')[4].textContent.replace(/[^\d\.]/g, '')) * 1000000;
-              fantasyData.scraped.bop[code] = projected;
-            }
-            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficeprophets!\n\n");
-          }
-        },
-        'derby.boxofficetheory.com': function () {
-          fantasyData.scraped.derby = {};
-          var date = new Date($('#MainContent_DerbyWeek_AdditionalTitle')[0].textContent.replace(/.*?-/, ''));
-          if (scraper.helpers.isntStale(date, fantasyData.staleThreshold)) {
-            var rows = $('.rgRow,.rgAltRow');
-            for (var i = 0; i < rows.length; i++) {
-              var code = fmlApp.helpers.cleanTitle(rows[i].querySelectorAll('td')[0].textContent);
-              var projected = parseFloat(rows[i].querySelectorAll('td')[2].textContent.replace(/[^\d\.]/g, '')) * 1000000;
-              fantasyData.scraped.derby[code] = projected;
-            }
-            scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficetheory!\n\n");
-          } else {
-            scraper.handlers.chooseTarget("\u274C boxofficetheory hasn\'t updated yet.\n\n");
-          }
-        }
-      }
-    },
-    helpers: {
-      detectPath: function () {
-        if (scraper.handlers.path[domain]) {
-          fantasyData.scraped = !!href.match(/[\#\&\?]data=/) ?
-            JSON.parse(decodeURIComponent(href.replace(/.*?[\#\&\?]data=/, ''))) : {};
-          return scraper.handlers.path[domain]();
-        } else {
-          return scraper.handlers.chooseTarget();
-        }
-      },
-      isntStale: function (date, adjusted) {
-        var today = (new Date()).setHours(0, 0, 0, 0);
-        if (typeof adjusted != 'undefined') {
-          date.setDate(date.getDate() + adjusted);
-        }
-        return today - date < fantasyData.staleThreshold * 24 * 60 * 60 * 1000;
-      },
     }
   };
 
