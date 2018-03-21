@@ -172,7 +172,7 @@
   position: relative
 }
 
-.fml-calc .calc-form label .projections {
+.fml-calc .calc-form .projections {
   display: none;
   min-width: 8em;
   position: absolute;
@@ -185,27 +185,28 @@
   text-align: left;
 }
 
-.fml-calc .calc-form label .projections .title {
+.fml-calc .calc-form .projections .title {
   font-size: 1.2em;
   margin-bottom: .5em;
   display: inline-block;
 }
 
-.fml-calc .calc-form label .projections li {
+.fml-calc .calc-form .projections li {
   clear: both;
 }
 
-.fml-calc .calc-form label .projections li span:first-child {
+.fml-calc .calc-form .projections li span:first-child {
   float: left;
 }
 
-.fml-calc .calc-form label .projections li span:last-child {
+.fml-calc .calc-form  .projections li span:last-child {
   float: right;
   padding-left: 1em;
   box-sizing: border-box;
 }
 
-.fml-calc .calc-form label:hover .projections {
+.fml-calc .calc-form>div:hover .projections
+.fml-calc .calc-form>input:focus ~ .projections {
   display: block
 }
 
