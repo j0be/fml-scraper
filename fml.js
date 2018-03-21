@@ -11,6 +11,7 @@ javascript: (function () {
       'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: 1 },
       'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .6 },
       'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .9 },
+      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .7 },
     },
     weekendWeight: { /* This is how much to weight each day of a movie that is split into separate days */
       '3': { /* 3 day weekend */
@@ -331,7 +332,7 @@ javascript: (function () {
         for (var movie in fantasyData.formdata) {
           for (var i = 0; i < formVars.length; i++) {
             if (fantasyData.formdata[movie].code == formVars[i][0]) {
-              fantasyData.formdata[movie].projected = parseFloat(formVars[i][1]);
+              fantasyData.formdata[movie].projected = Math.max(parseFloat(formVars[i][1]),1);
               bestValue = Math.max((fantasyData.formdata[movie].projected / fantasyData.formdata[movie].bux), bestValue);
             }
           }
@@ -347,10 +348,12 @@ javascript: (function () {
             var lineup = passedLineup.slice();
             var movie = fantasyData.formdata[m],
               prevBux = lineup.length ? lineup[lineup.length - 1].bux : 1000,
+              prevProjection = lineup.length ? lineup[lineup.length - 1].projected : 0,
               tooExpensive = bux - movie.bux < 0,
-              cheaperThanPrevious = movie.bux <= prevBux;
+              buxCheaper = movie.bux <= prevBux,
+              projectedCheaper = movie.projected < prevProjection;
 
-            if (!tooExpensive && cheaperThanPrevious && lineup.length < 8) {
+            if (!tooExpensive && buxCheaper && (movie.bux != prevBux || !projectedCheaper) && lineup.length < 8) {
               lineup.push(movie);
               fmlApp.helpers.getVariation(lineup, bux - movie.bux);
             }
