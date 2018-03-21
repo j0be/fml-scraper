@@ -313,31 +313,31 @@ javascript: (function () {
           for (var i = 0; i < fdata.formdata.length; i++) {
             if (fdata.formdata[i].bux > 0) {
               labelStr = '<label ' + (!fdata.formdata[i].hasProjection ? 'class="noProjection" title="Autofilled projection data"' : 'class="hasProjection"') + ' for="calc-' + i + '">';
+              labelStr += fdata.formdata[i].title + ' ' + fdata.formdata[i].day +
+                (!fdata.formdata[i].hasProjection ? '*' : '');
+              labelStr += '</label>';
 
+              projectionsStr = '';
               if (fdata.formdata[i].hasProjection) {
-                labelStr += '<span class="projections"><span class="title">' +
+                projectionsStr += '<span class="projections"><span class="title">' +
                   fdata.formdata[i].title + ' ' + fdata.formdata[i].day + '</span><ul>';
                 for (key in fdata.scraped) {
                   if (fdata.scraped.hasOwnProperty(key)) {
                     for (innerkey in fdata.scraped[key]) {
                       if (innerkey === fdata.formdata[i].code) {
-                        labelStr += '<li><span>' + key + '</span><span>' + fmlApp.helpers.currency(fdata.scraped[key][innerkey], 'M') + '</span></li>';
+                        projectionsStr += '<li><span>' + key + '</span><span>' + fmlApp.helpers.currency(fdata.scraped[key][innerkey], 'M') + '</span></li>';
                       }
                     }
                   }
                 }
-                labelStr += '</ul></span>';
+                projectionsStr += '</ul></span>';
               }
 
-              labelStr += fdata.formdata[i].title + ' ' + fdata.formdata[i].day +
-                (!fdata.formdata[i].hasProjection ? '*' : '');
-              labelStr += '</label>';
-              calcform.innerHTML += labelStr;
-
-              calcform.innerHTML += '<div>' +
+              calcform.innerHTML += '<div>' + labelStr +
                 '<button title="Subtract 10% from value" onclick="fmlApp.handlers.modifyProjected(this,-10)">-</button>' +
                 '<input id="calc-' + i + '" name="' + fdata.formdata[i].code + '" value="' + fmlApp.helpers.currency(fdata.formdata[i].projected,'rawM').toFixed(2) + '" type="tel" />' +
                 '<button title="Add 10% to value" onclick="fmlApp.handlers.modifyProjected(this,10)">+</button>' +
+                projectionsStr +
                 '</div>';
             }
           }
