@@ -224,6 +224,30 @@
   margin: 0
 }
 
+.fml-calc .calc-form>div {
+  position: relative;
+}
+
+.fml-calc .calc-form>div::before,
+.fml-calc .calc-form>div::after {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  top: 7px;
+  font-size: 0.7em;
+  opacity: .9;
+}
+
+.fml-calc .calc-form>div::before {
+  content: "$";
+  left: 25px;
+}
+
+.fml-calc .calc-form>div::after {
+  content: "M";
+  right: 25px;
+}
+
 .fml-calc .calc-form input,
 .fml-calc .calc-form button {
   display: inline-block;
@@ -231,7 +255,7 @@
   vertical-align: top;
   width: 130px;
   border: 0;
-  padding: .2em .5em;
+  padding: .2em 21px;
   font-family: monospace
 }
 
@@ -239,7 +263,10 @@
   font-family: inherit;
   font-weight: bold;
   cursor: pointer;
-  width: auto
+  width: 21px;
+  text-align: center;
+  padding: 0;
+  line-height: 25px;
 }
 
 .fml-calc .calc-form>div {
