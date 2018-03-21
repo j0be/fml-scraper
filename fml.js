@@ -4,12 +4,12 @@ javascript: (function () {
     autoProjection: 50000, /* If we don't have a projection, how many $ should we give it per FML bux */
     targets: { /* Adjusted manually tweaks the actual projections, weight is how much bearing to give it when averaging the numbers */
       'fml': { url: 'http://fantasymovieleague.com' },
+      'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .9 },
       'mojo': { url: 'http://www.boxofficemojo.com/news/', adjusted: 0.957, weight: 1 },
       'pro': { url: 'http://pro.boxoffice.com/category/boxoffice-forecasts/', adjusted: 0.954, weight: 1 },
       'rep': { url: 'http://www.boxofficereport.com/predictions/predictions.html', adjusted: 0.953, weight: 1 },
       'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: 1 },
       'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .7 },
-      'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .9 },
       'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .5 },
     },
     weekendWeight: { /* This is how much to weight each day of a movie that is split into separate days */
@@ -55,12 +55,12 @@ javascript: (function () {
             host = (fsettings.targets[key].url).replace(/https?:\/\//, '').replace(/\.com.*/, '.com');
             if ((!fdata.scraped[key] && domain !== host) || key === 'fml') {
               optionsstr += '\n\u2022 ' + key + ': ' + host;
+              placeholder = key !== 'fml' && placeholder === 'fml' ? key : placeholder;
             }
-            placeholder = key !== 'fml' && placeholder === 'fml' ? key : placeholder;
           }
         }
         if (optionsstr.split('\n').length > 2) {
-          scraper.handlers.navigate(prompt(str + optionsstr, 'fml'));
+          scraper.handlers.navigate(prompt(str + optionsstr, placeholder));
         } else {
           if (forceAlert) {
             alert(ostr);
