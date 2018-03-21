@@ -4,13 +4,13 @@ javascript: (function () {
     autoProjection: 50000, /* If we don't have a projection, how many $ should we give it per FML bux */
     targets: { /* Adjusted manually tweaks the actual projections, weight is how much bearing to give it when averaging the numbers */
       'fml': { url: 'http://fantasymovieleague.com' },
-      'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .9 },
+      'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .7 },
       'mojo': { url: 'http://www.boxofficemojo.com/news/', adjusted: 0.957, weight: 1 },
       'pro': { url: 'http://pro.boxoffice.com/category/boxoffice-forecasts/', adjusted: 0.954, weight: 1 },
       'rep': { url: 'http://www.boxofficereport.com/predictions/predictions.html', adjusted: 0.953, weight: 1 },
       'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: 1 },
-      'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .7 },
-      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .5 },
+      'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .5 },
+      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .3 },
     },
     weekendWeight: { /* This is how much to weight each day of a movie that is split into separate days */
       '3': { /* 3 day weekend */
@@ -336,7 +336,7 @@ javascript: (function () {
 
               calcform.innerHTML += '<div>' +
                 '<button title="Subtract 10% from value" onclick="fmlApp.handlers.modifyProjected(this,-10)">-</button>' +
-                '<input id="calc-' + i + '" name="' + fdata.formdata[i].code + '" value="' + fdata.formdata[i].projected + '" type="number" />' +
+                '<input id="calc-' + i + '" name="' + fdata.formdata[i].code + '" value="' + fmlApp.helpers.currency(fdata.formdata[i].projected,'rawM').toFixed(2) + '" type="tel" />' +
                 '<button title="Add 10% to value" onclick="fmlApp.handlers.modifyProjected(this,10)">+</button>' +
                 '</div>';
             }
@@ -457,8 +457,8 @@ javascript: (function () {
       },
       modifyProjected: function (element, value) {
         var input = element.parentElement.getElementsByTagName('input')[0],
-          inputVal = parseFloat(input.value);
-        input.value = Math.round(inputVal * ((100 + value) / 100));
+          inputVal = parseFloat(input.value*1000000);
+        input.value = fmlApp.helpers.currency(inputVal * ((100 + value) / 100), 'rawM').toFixed(2);
       }
     },
     helpers: {
@@ -471,6 +471,8 @@ javascript: (function () {
               style: 'currency',
               currency: 'USD'
             }).slice(0, -3);
+          case 'rawM':
+            return Math.round(number/10000)/100;
           default:
             return '$' + Math.round(number);
         }
@@ -559,7 +561,7 @@ javascript: (function () {
         for (var movie in fdata.formdata) {
           for (var i = 0; i < formVars.length; i++) {
             if (fdata.formdata[movie].code == formVars[i][0]) {
-              fdata.formdata[movie].projected = Math.max(parseFloat(formVars[i][1]), 1);
+              fdata.formdata[movie].projected = Math.max(parseFloat(formVars[i][1])*1000000, 1);
               bestValue = Math.max((fdata.formdata[movie].projected / fdata.formdata[movie].bux), bestValue);
             }
           }
