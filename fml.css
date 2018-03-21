@@ -205,7 +205,7 @@
   box-sizing: border-box;
 }
 
-.fml-calc .calc-form>div:hover .projections
+.fml-calc .calc-form>div:hover .projections,
 .fml-calc .calc-form>input:focus ~ .projections {
   display: block
 }
@@ -234,7 +234,7 @@
   position: absolute;
   z-index: 1;
   pointer-events: none;
-  top: 7px;
+  bottom: 5px;
   font-size: 0.7em;
   opacity: .9;
 }
