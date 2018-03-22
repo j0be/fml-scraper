@@ -420,7 +420,7 @@ javascript: (function () {
             }
             min = min === 9000000000 || min === max ? 0 : min;
             projectedData.push([fdata.formdata[key].title + ' ' + fdata.formdata[key].day, min, max, fdata.formdata[key].projected]);
-            color = fdata.formdata[key].bestValue ? '#ff0077' : (fdata.formdata[key].nearBest ? '#9a1b57' : '#85593F');
+            color = fdata.formdata[key].bestValue ? '#ff0077' : (fdata.formdata[key].nearBest ? '#9a1b57' : (fdata.formdata[key].worstValue ? '#4B2F1E' : '#85593F'));
             performanceData.push([fdata.formdata[key].title + ' ' + fdata.formdata[key].day, fdata.formdata[key].dollarperbux, color]);
           }
         }
@@ -558,19 +558,22 @@ javascript: (function () {
       reparseForm: function () {
         var myform = $('.fml-calc .calc-form')[0],
           formVars = Array.from(new FormData(myform), e => e.map(encodeURIComponent)),
-          bestValue = 0;
+          bestValue = 0,
+          worstValue = Number.MAX_SAFE_INTEGER;
         for (var movie in fdata.formdata) {
           for (var i = 0; i < formVars.length; i++) {
             if (fdata.formdata[movie].code == formVars[i][0]) {
               fdata.formdata[movie].projected = Math.max(parseFloat(formVars[i][1])*1000000, 1);
               bestValue = Math.max((fdata.formdata[movie].projected / fdata.formdata[movie].bux), bestValue);
+              worstValue = Math.min((fdata.formdata[movie].projected / fdata.formdata[movie].bux), worstValue);
             }
           }
         }
         for (var movie in fdata.formdata) {
           fdata.formdata[movie].dollarperbux = (fdata.formdata[movie].projected / fdata.formdata[movie].bux);
           fdata.formdata[movie].bestValue = fdata.formdata[movie].dollarperbux >= bestValue;
-          fdata.formdata[movie].nearBest = fdata.formdata[movie].dollarperbux >= bestValue * .9;
+          fdata.formdata[movie].nearBest = fdata.formdata[movie].dollarperbux >= bestValue * .92;
+          fdata.formdata[movie].worstValue = fdata.formdata[movie].dollarperbux <= worstValue;
         }
       },
       getVariation: function (passedLineup, bux) {
