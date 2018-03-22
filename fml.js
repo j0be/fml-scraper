@@ -392,7 +392,7 @@ javascript: (function () {
           performanceChart = document.createElement('p'),
           projectedData = [['Movie', 'min', 'max', 'projected']],
           projectedChart = document.createElement('p'),
-          options = { title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { minValue: 0, textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none', textStyle: { color: '#fff' } } };
+          options = { height: 400, title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { minValue: 0, textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none', textStyle: { color: '#fff' } } };
 
         var performanceOptions = JSON.parse(JSON.stringify(options)),
           projectedOptions = JSON.parse(JSON.stringify(options));
