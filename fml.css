@@ -16,6 +16,7 @@
   cursor: pointer;
   display: block;
   font-size: .8em;
+  margin-bottom: 1em;
   text-align: center;
 }
 .fml-calc a:hover {
