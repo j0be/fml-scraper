@@ -161,9 +161,9 @@ javascript: (function () {
           var date = new Date($('h5')[0].textContent.replace(/Published on /mi, '').replace(/ at(.|\r|\n)*/i, ''));
           if (scraper.helpers.isntStale(date, -1)) {
             var rows = Array.from($('h4>table.inlineTable:nth-child(1) tr')).slice(1);
-            for (var key in options) {
-              var code = fmlApp.helpers.cleanTitle(options[key].getElementsByTagName('td')[1].textContent.replace(/<.*?>/g, '').replace(/\(.*?\)/g, ''));
-              var projected = parseFloat(options[key].getElementsByTagName('td')[2].textContent.replace(/[^\d\.]/g, '')) * 1000000;
+            for (var key in rows) {
+              var code = fmlApp.helpers.cleanTitle(rows[key].getElementsByTagName('td')[1].textContent.replace(/<.*?>/g, '').replace(/\(.*?\)/g, ''));
+              var projected = parseFloat(rows[key].getElementsByTagName('td')[2].textContent.replace(/[^\d\.]/g, '')) * 1000000;
               fdata.scraped.rep[code] = projected;
             }
             scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficereport!\n\n");
@@ -285,7 +285,7 @@ javascript: (function () {
         },
         styles: function () {
           var xhr = new XMLHttpRequest();
-          xhr.open('GET', 'https://raw.githubusercontent.com/j0be/fml-scraper/master/fml.css');
+          xhr.open('GET', 'https://raw.githubusercontent.com/j0be/fml-scraper/master/fml.css?11' + (new Date()).getDate());
           xhr.send(null);
           xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
