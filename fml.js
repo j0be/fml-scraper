@@ -388,11 +388,11 @@ javascript: (function () {
         if (typeof window.google === 'undefined') {
           return false;
         }
-        var performanceData = [['Movie', '$/bux']],
+        var performanceData = [['Movie', '$/bux', { role: 'style' }]],
           performanceChart = document.createElement('p'),
           projectedData = [['Movie', 'min', 'max', 'projected']],
           projectedChart = document.createElement('p'),
-          options = { height: 350, chartArea: {'width': '80%', 'height': '60%'}, title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { minValue: 0, textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none' }, series: { 0: { color: '#ff0077' }} };
+          options = { height: 350, chartArea: {'width': '80%', 'height': '60%'}, title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { minValue: 0, textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none' } };
 
         var performanceOptions = JSON.parse(JSON.stringify(options)),
           projectedOptions = JSON.parse(JSON.stringify(options));
@@ -420,7 +420,8 @@ javascript: (function () {
             }
             min = min === 9000000000 || min === max ? 0 : min;
             projectedData.push([fdata.formdata[key].title + ' ' + fdata.formdata[key].day, min, max, fdata.formdata[key].projected]);
-            performanceData.push([fdata.formdata[key].title + ' ' + fdata.formdata[key].day, fdata.formdata[key].dollarperbux]);
+            color = fdata.formdata[key].bestValue ? '#ff0077' : (fdata.formdata[key].nearBest ? '#9a1b57' : '#85593F');
+            performanceData.push([fdata.formdata[key].title + ' ' + fdata.formdata[key].day, fdata.formdata[key].dollarperbux, color]);
           }
         }
         var data = window.google.visualization.arrayToDataTable(projectedData);
@@ -569,6 +570,7 @@ javascript: (function () {
         for (var movie in fdata.formdata) {
           fdata.formdata[movie].dollarperbux = (fdata.formdata[movie].projected / fdata.formdata[movie].bux);
           fdata.formdata[movie].bestValue = fdata.formdata[movie].dollarperbux >= bestValue;
+          fdata.formdata[movie].nearBest = fdata.formdata[movie].dollarperbux >= bestValue * .9;
         }
       },
       getVariation: function (passedLineup, bux) {
