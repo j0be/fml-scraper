@@ -9,17 +9,17 @@ javascript: (function () {
       'pro': { url: 'http://pro.boxoffice.com/category/boxoffice-forecasts/', adjusted: 0.954, weight: 1 },
       'rep': { url: 'http://www.boxofficereport.com/predictions/predictions.html', adjusted: 0.953, weight: .9 },
       'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: .8 },
-      'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .5 },
-      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .3 },
+      'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .2 },
+      'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .1 },
     },
-    weekendWeight: { /* This is how much to weight each day of a movie that is split into separate days */
+    weekendAdjustments: { /* This is how much to adjust each day of a movie that is split into separate days (they should add up to 1)*/
       '3': { /* 3 day weekend */
         'FRI': .4184,
         'SAT': .3309,
         'SUN': .2507
       },
       '4': { /* 4 day weekend */
-        'FRI': .311,
+        'FRI': .3110,
         'SAT': .2793,
         'SUN': .2798,
         'MON': .1298
@@ -309,7 +309,7 @@ javascript: (function () {
         },
         calculator: function () {
           calcform = $('.fml-calc .calc-form')[0];
-          calcform.innerHTML = '';
+          calcform.innerHTML = '<a onclick="fmlApp.handlers.massEnter()">Mass Enter Numbers</a>';
           for (var i = 0; i < fdata.formdata.length; i++) {
             if (fdata.formdata[i].bux > 0) {
               labelStr = '<label ' + (!fdata.formdata[i].hasProjection ? 'class="noProjection" title="Autofilled projection data"' : 'class="hasProjection"') + ' for="calc-' + i + '">';
@@ -460,6 +460,15 @@ javascript: (function () {
         var input = element.parentElement.getElementsByTagName('input')[0],
           inputVal = parseFloat(input.value*1000000);
         input.value = fmlApp.helpers.currency(inputVal * ((100 + value) / 100), 'rawM').toFixed(2);
+      },
+      massEnter: function () {
+        var valueStr = prompt('Enter movie values in millions, space delimited',''),
+          values = valueStr.split(/\s+/),
+          formInputs = $('.fml-calc .calc-form input');
+        for (var i=0; i < values.length; i++) {
+          formInputs[i].value = values[i];
+        }
+        fmlApp.handlers.recalculate();
       }
     },
     helpers: {
