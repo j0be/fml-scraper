@@ -112,12 +112,6 @@
 .fml-calc .output .img + .img {
   margin-left: .5em;
 }
-@media (max-width: 1023px) {
-  .fml-calc .output .img:nth-child(5) {
-    clear: left;
-    margin-left: 0;
-  }
-}
 .fml-calc .calc-form {
   color: #fff;
   float: left;
@@ -220,4 +214,30 @@
   font-size: 1em;
   margin: 1.5em 0;
   width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .fml-calc .output {
+    border-right: 0;
+    margin-right: 0;
+    padding-right: 0;
+    width: 100%;
+  }
+  .fml-calc .output .img {
+    max-width: 18.8vw;
+  }
+  .fml-calc .output .img img {
+    width: 100%;
+  }
+  .fml-calc .output .img:nth-child(5) {
+    clear: left;
+    margin-left: 0;
+  }
+  .fml-calc .output > p {
+    clear: left;
+    width: 100%;
+  }
+  .fml-calc .calc-form {
+    clear: left;
+  }
 }
