@@ -52,8 +52,9 @@
   clear: left;
 }
 .fml-calc .output > p {
+  clear: left;
   float: left;
-  width: 50%;
+  width: 100%;
 }
 .fml-calc .output > p ~ div .img {
   box-shadow: none !important;
@@ -232,10 +233,6 @@
   .fml-calc .output .img:nth-child(5) {
     clear: left;
     margin-left: 0;
-  }
-  .fml-calc .output > p {
-    clear: left;
-    width: 100%;
   }
   .fml-calc .calc-form {
     clear: left;
