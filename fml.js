@@ -7,8 +7,8 @@ javascript: (function () {
       'insider': { url: 'http://fantasymovieleague.com/news', adjusted: 0.977, weight: .7 },
       'mojo': { url: 'http://www.boxofficemojo.com/news/', adjusted: 0.957, weight: 1 },
       'pro': { url: 'http://pro.boxoffice.com/category/boxoffice-forecasts/', adjusted: 0.954, weight: 1 },
-      'rep': { url: 'http://www.boxofficereport.com/predictions/predictions.html', adjusted: 0.953, weight: 1 },
-      'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: 1 },
+      'rep': { url: 'http://www.boxofficereport.com/predictions/predictions.html', adjusted: 0.953, weight: .9 },
+      'bop': { url: 'http://www.boxofficeprophets.com/', adjusted: 0.942, weight: .8 },
       'derby': { url: 'https://derby.boxofficetheory.com/AllPredictions.aspx', adjusted: 1, weight: .5 },
       'coupe': { url: 'https://fantasymovieleague.com/chatter/searchmessages?boardId=fml-main-chatter&query=coupe', adjusted: 1, weight: .3 },
     },
@@ -285,7 +285,7 @@ javascript: (function () {
         },
         styles: function () {
           var xhr = new XMLHttpRequest();
-          xhr.open('GET', 'https://raw.githubusercontent.com/j0be/fml-scraper/master/fml.css?11' + (new Date()).getDate());
+          xhr.open('GET', 'https://raw.githubusercontent.com/j0be/fml-scraper/master/fml.css?' + (new Date()).getDate());
           xhr.send(null);
           xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
@@ -392,7 +392,7 @@ javascript: (function () {
           performanceChart = document.createElement('p'),
           projectedData = [['Movie', 'min', 'max', 'projected']],
           projectedChart = document.createElement('p'),
-          options = { title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none', textStyle: { color: '#fff' } } };
+          options = { title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { minValue: 0, textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none', textStyle: { color: '#fff' } } };
 
         var performanceOptions = JSON.parse(JSON.stringify(options)),
           projectedOptions = JSON.parse(JSON.stringify(options));
