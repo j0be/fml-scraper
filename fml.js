@@ -188,9 +188,9 @@ javascript: (function () {
             }
           } else if (href.match('id=')) {
             var rows = Array.from($('h1 ~ ul')[$('h1 ~ ul').length - 1].getElementsByTagName('li'));
-            for (var key in rows) {
-              var code = fmlApp.helpers.cleanTitle(fmlApp.helpers.cleanTitle(rows[key].getElementsByTagName['b'][0].textContent));
-              var projected = parseFloat(vals[i].textContent.replace(/.*? - \$/, '').replace(/[^\d\.]/g, '')) * 1000000;
+            for (var i = 0; i < rows.length; i++) {
+              var code = fmlApp.helpers.cleanTitle(fmlApp.helpers.cleanTitle(rows[i].textContent.replace(/ - .*/,'')));
+              var projected = parseFloat(rows[i].textContent.replace(/.*? - \$/, '').replace(/[^\d\.]/g, '')) * 1000000;
               fdata.scraped.mojo[code] = projected;
             }
             scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficemojo!\n\n");
@@ -203,7 +203,7 @@ javascript: (function () {
             for (var i = 0; i < links.length; i++) {
               if (links[i].textContent && links[i].textContent.trim().toLowerCase() === 'weekend forecast') {
                 var postedDate = links[i].closest('table').querySelectorAll('strong'),
-                  date = !!postedDate[postedDate.length-1].textContent ? new Date(postedDate[postedDate.length-1].textContent) : (new Date()).setHours(0, 0, 0, 0);
+                  date = !!postedDate[postedDate.length - 1].textContent ? new Date(postedDate[postedDate.length - 1].textContent) : (new Date()).setHours(0, 0, 0, 0);
                 if (scraper.helpers.isntStale(date)) {
                   scraper.handlers.rawNavigate(links[i].closest('a').getAttribute('href'));
                   break;
@@ -244,7 +244,12 @@ javascript: (function () {
         if (scraper.handlers.path[domain]) {
           fdata.scraped = !!href.match(/[\#\&\?]data=/) ?
             JSON.parse(decodeURIComponent(href.replace(/.*?[\#\&\?]data=/, ''))) : {};
-          return scraper.handlers.path[domain]();
+          try {
+            return scraper.handlers.path[domain]();
+          } catch (err) {
+            alert('Uh oh. The scraper for '+domain+' seems to be broken.');
+            return scraper.handlers.chooseTarget();
+          }
         } else {
           return scraper.handlers.chooseTarget();
         }
@@ -335,7 +340,7 @@ javascript: (function () {
 
               calcform.innerHTML += '<div>' + labelStr +
                 '<button title="Subtract 10% from value" onclick="fmlApp.handlers.modifyProjected(this,-10)">-</button>' +
-                '<input id="calc-' + i + '" name="' + fdata.formdata[i].code + '" value="' + fmlApp.helpers.currency(fdata.formdata[i].projected,'rawM').toFixed(2) + '" type="tel" />' +
+                '<input id="calc-' + i + '" name="' + fdata.formdata[i].code + '" value="' + fmlApp.helpers.currency(fdata.formdata[i].projected, 'rawM').toFixed(2) + '" type="tel" />' +
                 '<button title="Add 10% to value" onclick="fmlApp.handlers.modifyProjected(this,10)">+</button>' +
                 projectionsStr +
                 '</div>';
@@ -392,7 +397,7 @@ javascript: (function () {
           performanceChart = document.createElement('p'),
           projectedData = [['Movie', 'min', 'max', 'projected']],
           projectedChart = document.createElement('p'),
-          options = { height: 350, chartArea: {'width': '80%', 'height': '60%'}, title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { minValue: 0, textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none' } };
+          options = { height: 350, chartArea: { 'width': '80%', 'height': '60%' }, title: 'Dollars per FML bux', backgroundColor: 'transparent', titleTextStyle: { color: '#fff' }, hAxis: { textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, vAxis: { minValue: 0, textStyle: { color: '#fff' }, titleTextStyle: { color: '#fff' } }, legend: { position: 'none' } };
 
         var performanceOptions = JSON.parse(JSON.stringify(options)),
           projectedOptions = JSON.parse(JSON.stringify(options));
@@ -458,14 +463,14 @@ javascript: (function () {
       },
       modifyProjected: function (element, value) {
         var input = element.parentElement.getElementsByTagName('input')[0],
-          inputVal = parseFloat(input.value*1000000);
+          inputVal = parseFloat(input.value * 1000000);
         input.value = fmlApp.helpers.currency(inputVal * ((100 + value) / 100), 'rawM').toFixed(2);
       },
       massEnter: function () {
-        var valueStr = prompt('Enter movie values in millions, space delimited',''),
+        var valueStr = prompt('Enter movie values in millions, space delimited', ''),
           values = valueStr.split(/\s+/),
           formInputs = $('.fml-calc .calc-form input');
-        for (var i=0; i < values.length; i++) {
+        for (var i = 0; i < values.length; i++) {
           formInputs[i].value = values[i];
         }
         fmlApp.handlers.recalculate();
@@ -482,7 +487,7 @@ javascript: (function () {
               currency: 'USD'
             }).slice(0, -3);
           case 'rawM':
-            return Math.round(number/10000)/100;
+            return Math.round(number / 10000) / 100;
           default:
             return '$' + Math.round(number);
         }
@@ -572,7 +577,7 @@ javascript: (function () {
         for (var movie in fdata.formdata) {
           for (var i = 0; i < formVars.length; i++) {
             if (fdata.formdata[movie].code == formVars[i][0]) {
-              fdata.formdata[movie].projected = Math.max(parseFloat(formVars[i][1])*1000000, 1);
+              fdata.formdata[movie].projected = Math.max(parseFloat(formVars[i][1]) * 1000000, 1);
               bestValue = Math.max((fdata.formdata[movie].projected / fdata.formdata[movie].bux), bestValue);
               worstValue = Math.min((fdata.formdata[movie].projected / fdata.formdata[movie].bux), worstValue);
             }
