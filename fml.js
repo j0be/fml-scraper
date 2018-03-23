@@ -203,20 +203,21 @@ javascript: (function () {
             for (var i = 0; i < links.length; i++) {
               if (links[i].textContent && links[i].textContent.trim().toLowerCase() === 'weekend forecast') {
                 var postedDate = links[i].closest('table').querySelectorAll('strong'),
-                  date = !!postedDate[postedDate.length - 1].textContent ? new Date(postedDate[postedDate.length - 1].textContent) : (new Date()).setHours(0, 0, 0, 0);
+                  date = postedDate[postedDate.length - 1].textContent.trim().toLowerCase() !== 'weekend forecast' ? new Date(postedDate[postedDate.length - 1].textContent) : (new Date()).setHours(0, 0, 0, 0);
                 if (scraper.helpers.isntStale(date)) {
                   scraper.handlers.rawNavigate(links[i].closest('a').getAttribute('href'));
-                  break;
                 } else {
                   scraper.handlers.chooseTarget("\u274C boxofficeprophets hasn\'t posted yet.\n\n");
                 }
+                break;
               }
             }
           } else {
-            var rows = Array.from($('#EchoTopic table')[$('#EchoTopic table').length - 1].querySelectorAll('tr')).slice(2);
-            for (var key in rows) {
-              var code = fmlApp.helpers.cleanTitle(projections[i].querySelectorAll('td')[1].textContent);
-              var projected = parseFloat(projections[i].querySelectorAll('td')[4].textContent.replace(/[^\d\.]/g, '')) * 1000000;
+            var tables = $('#EchoTopic table'),
+              rows = Array.from(tables[tables.length - 1].querySelectorAll('tr')).slice(2);
+            for (var i = 0; i < rows.length; i++) {
+              var code = fmlApp.helpers.cleanTitle(rows[i].querySelectorAll('td')[1].textContent);
+              var projected = parseFloat(rows[i].querySelectorAll('td')[4].textContent.replace(/[^\d\.]/g, '')) * 1000000;
               fdata.scraped.bop[code] = projected;
             }
             scraper.handlers.chooseTarget("\u2714 Grabbed data from boxofficeprophets!\n\n");
