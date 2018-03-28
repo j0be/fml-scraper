@@ -494,11 +494,12 @@ javascript: (function () {
         }
       },
       cleanTitle: function (titleStr) {
+        titleStr = fmlApp.helpers.exceptionClean(titleStr); /* For movie specific cleanups that are bound to happen */
         titleStr = titleStr.replace(/\b(a|an|the)\b/i, ''); /* Remove articles */
         titleStr = titleStr.replace(/\d+$/, '').replace(/:.*/, ''); /* Try to make sequels consistent */
         titleStr = titleStr.split(' ').slice(0, 2).join(''); /* Take the first two words */
         titleStr = titleStr.replace(/\W/g, '').toLowerCase(); /* Cleanup */
-        return fmlApp.helpers.exceptionClean(titleStr); /* For movie specific cleanups that are bound to happen */
+        return titleStr; 
       },
       exceptionClean: function(titleStr) {
         var regexes = [
