@@ -497,7 +497,7 @@ javascript: (function () {
         titleStr = fmlApp.helpers.exceptionClean(titleStr); /* For movie specific cleanups that are bound to happen */
         titleStr = titleStr.replace(/\b(a|an|the|of)\b/i, ''); /* Remove articles and common words */
         titleStr = titleStr.replace(/\d+$/, '').replace(/:.*/, ''); /* Try to make sequels consistent */
-        titleStr = titleStr.split(' ').slice(0, 2).join(''); /* Take the first two words */
+        titleStr = titleStr.trim().split(' ').slice(0, 2).join(''); /* Take the first two words */
         titleStr = titleStr.replace(/\W/g, '').toLowerCase(); /* Cleanup */
         return titleStr; 
       },
