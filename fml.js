@@ -497,7 +497,17 @@ javascript: (function () {
         titleStr = titleStr.replace(/\b(a|an|the)\b/i, ''); /* Remove articles */
         titleStr = titleStr.replace(/\d+$/, '').replace(/:.*/, ''); /* Try to make sequels consistent */
         titleStr = titleStr.split(' ').slice(0, 2).join(''); /* Take the first two words */
-        return titleStr.replace(/\W/g, '').toLowerCase(); /* Cleanup */
+        titleStr = titleStr.replace(/\W/g, '').toLowerCase(); /* Cleanup */
+        return fmlApp.helpers.exceptionClean(titleStr); /* For movie specific cleanups that are bound to happen */
+      },
+      exceptionClean: function(titleStr) {
+        var regexes = [
+          /Tyler Perry('s)?/i,
+        ];
+        for (key in regexes) {
+          titleStr = titleStr.replace(regexes[key],'');
+        }
+        return titleStr;
       },
       parseFMLData: function (projectedData) {
         var movies = $('ul.cineplex__bd-movies .cineplex__bd-movie-item .outer-wrap'),
