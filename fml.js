@@ -538,7 +538,7 @@ javascript: (function () {
           }
 
           if (day) {
-            projected = Math.round(projected * fsettings.weekendWeight[numdays][day]);
+            projected = Math.round(projected * fsettings.weekendAdjustments[numdays][day]);
           }
 
           fmlData.push({
