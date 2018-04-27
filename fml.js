@@ -99,11 +99,11 @@ javascript: (function () {
               }
             }
           } else if (href.match('posts')) {
-            var rows = $('.post__content')[0].textContent.match(/.*?\$[\d\.,]+( million)?/gi);
+            var rows = $('.post__content')[0].textContent.match(/.*?\$[\d\.,]+( million| ?k)?/gi);
             for (var i = 0; i < rows.length; i++) {
               var code = fmlApp.helpers.cleanTitle(rows[i].match(/(?<=").+(?=")/)[0]);
               var projected = parseFloat(rows[i].match(/(?<=\$).+/)[0].replace(/[,]/g, '').replace(/ ?million/i, ''));
-              projected = Math.round(projected < 1000 ? projected * 1000000 : projected);
+              projected = Math.round(projected < 300 ? projected * 1000000 : projected);
               fdata.scraped.insider[code] = projected;
             }
             scraper.handlers.chooseTarget("\u2714 Grabbed data from FML Insider!\n\n");
